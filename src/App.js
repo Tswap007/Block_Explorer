@@ -1,36 +1,55 @@
 import { Alchemy, Network } from 'alchemy-sdk';
 import { useEffect, useState } from 'react';
-
+import { Link, Route, Routes } from "react-router-dom";
+import Header from './Header';
+import SearchBar from './Search';
+import BlockList from './BlockList';
+import BlockInfo from './BlockInfo';
 import './App.css';
+import TransactionDetails from './Transaction';
+import Address from './Address';
 
-// Refer to the README doc for more information about using API
-// keys in client-side code. You should never do this in production
-// level code.
 const settings = {
   apiKey: process.env.REACT_APP_ALCHEMY_API_KEY,
   network: Network.ETH_MAINNET,
 };
 
-
-// In this week's lessons we used ethers.js. Here we are using the
-// Alchemy SDK is an umbrella library with several different packages.
-//
-// You can read more about the packages here:
-//   https://docs.alchemy.com/reference/alchemy-sdk-api-surface-overview#api-surface
 const alchemy = new Alchemy(settings);
 
 function App() {
   const [blockNumber, setBlockNumber] = useState();
+  const [gasPrice, setGasPrice] = useState();
 
   useEffect(() => {
-    async function getBlockNumber() {
-      setBlockNumber(await alchemy.core.getBlockNumber());
-    }
-
+    getGasPrice();
     getBlockNumber();
-  });
+  }, []);
 
-  return <div className="App">Block Number: {blockNumber}</div>;
+  async function getBlockNumber() {
+    setBlockNumber(await alchemy.core.getBlockNumber());
+
+  }
+  async function getGasPrice() {
+    const gasPrice = (await alchemy.core.getGasPrice());
+    const gasPriceInGwei = gasPrice.div(10 ** 9).toString();
+    setGasPrice(gasPriceInGwei);
+  }
+  return (
+    <>
+      <Header gasPrice={gasPrice} />
+      <SearchBar />
+      <Routes>
+        <Route path="/" element={<><div ><h3><Link to={"/"} onClick={() => window.location.reload()}>Latest Blocks</Link></h3></div> <BlockList blockNumber={blockNumber} /></>} />
+        <Route path="block/:blockNumber" element={<BlockInfo />} />
+        <Route path="transaction/:hash" element={<TransactionDetails />} />
+        <Route path="address/:address" element={<Address />} />
+        <Route path="*" element={<div>
+          <Link to={"/"}>Home</Link>
+          <h1>No Match</h1>
+        </div>} />
+      </Routes>
+    </>
+  );
 }
 
 export default App;
